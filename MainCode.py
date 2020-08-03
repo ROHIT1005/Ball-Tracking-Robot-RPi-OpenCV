@@ -4,27 +4,27 @@ from picamera import PiCamera
 import RPi.GPIO as GPIO
 import time
 import cv2
-import cv2.cv as cv
+
 import numpy as np
 
 #hardware work
-GPIO.setmode(GPIO.BOARD)
-
-GPIO_TRIGGER1 = 29      #Left ultrasonic sensor
+GPIO.setmode(GPIO.BCM)
+GPIO_TRIGGER1 = 5      #Left ultrasonic sensor
 GPIO_ECHO1 = 31
 
-GPIO_TRIGGER2 = 36      #Front ultrasonic sensor
-GPIO_ECHO2 = 37
+GPIO_TRIGGER2 = 13      #Front ultrasonic sensor
+GPIO_ECHO2 = 6
 
-GPIO_TRIGGER3 = 33      #Right ultrasonic sensor
-GPIO_ECHO3 = 35
+GPIO_TRIGGER3 = 26      #Right ultrasonic sensor
+GPIO_ECHO3 = 19
 
-MOTOR1B=18  #Left Motor
-MOTOR1E=22
+MOTOR1B=25  #Left Motor
+MOTOR1E=8
 
-MOTOR2B=21  #Right Motor
-MOTOR2E=19
-
+MOTOR2B=23  #Right Motor
+MOTOR2E=15
+en = 24
+en1 = 14
 LED_PIN=13  #If it finds the ball, then it will light up the led
 
 # Set pins as output and input
@@ -35,6 +35,12 @@ GPIO.setup(GPIO_ECHO2,GPIO.IN)
 GPIO.setup(GPIO_TRIGGER3,GPIO.OUT)  # Trigger
 GPIO.setup(GPIO_ECHO3,GPIO.IN)
 GPIO.setup(LED_PIN,GPIO.OUT)
+GPIO.setup(en ,GPIO.OUT)
+GPIO.setup(en1 ,GPIO.OUT)
+p=GPIO.PWM(en,1000)
+p1=GPIO.PWM(en1,1000)
+p.start(100)
+p1.start(100)
 
 # Set trigger to False (Low)
 GPIO.output(GPIO_TRIGGER1, False)
@@ -118,9 +124,9 @@ def stop():
      
 #Image analysis work
 def segment_colour(frame):    #returns only the red colors in the frame
-    hsv_roi =  cv2.cvtColor(frame, cv2.cv.CV_BGR2HSV)
+    hsv_roi =  cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mask_1 = cv2.inRange(hsv_roi, np.array([160, 160,10]), np.array([190,255,255]))
-    ycr_roi=cv2.cvtColor(frame,cv2.cv.CV_BGR2YCrCb)
+    ycr_roi=cv2.cvtColor(frame,cv2.COLOR_BGR2YCrCb)
     mask_2=cv2.inRange(ycr_roi, np.array((0.,165.,0.)), np.array((255.,255.,255.)))
 
     mask = mask_1 | mask_2
@@ -134,7 +140,7 @@ def segment_colour(frame):    #returns only the red colors in the frame
 def find_blob(blob): #returns the red colored circle
     largest_contour=0
     cont_index=0
-    contours, hierarchy = cv2.findContours(blob, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    _, contours, _ = cv2.findContours(blob, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for idx, contour in enumerate(contours):
         area=cv2.contourArea(contour)
         if (area >largest_contour) :
